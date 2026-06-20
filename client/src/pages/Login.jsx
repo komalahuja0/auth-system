@@ -20,9 +20,7 @@ function Login() {
 
       localStorage.setItem("token", res.data.token);
 
-      alert("Login successful");
-
-      navigate("/profile");
+      navigate("/expenses");
     } catch (error) {
       alert(error.response?.data?.message || "Login failed");
     } finally {
@@ -60,7 +58,6 @@ function Login() {
             {" "}
             {loading ? "Logging in..." : "Login"}
           </button>
-       
 
       <p>
         Don't have an account? <Link to="/" className="text-blue-500 font-semibold hover:text-red-500 transition duration-300">Register</Link>
