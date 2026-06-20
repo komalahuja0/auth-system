@@ -11,6 +11,10 @@ const entrySchema = new mongoose.Schema({
     required: true,
     min: 0,
   },
+  date: {
+    type: String, // stored as "YYYY-MM-DD" from the date input
+    default: "",
+  },
 });
 
 const expenseSchema = new mongoose.Schema(

@@ -18,7 +18,7 @@ const daysInMonth = (month, year) => {
   return 30;
 };
 
-const emptyEntry = () => ({ name: "", amount: "" });
+const emptyEntry = () => ({ name: "", amount: "", date: "" });
 const API = "http://localhost:5000/api";
 
 function ExpenseTracker() {
@@ -38,10 +38,14 @@ function ExpenseTracker() {
   const totalSpent = entries.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
   const moneyLeft = (parseFloat(budget) || 0) - totalSpent;
 
-  // Days remaining is based on the real calendar date, not on how many
-  // entries exist — deleting/adding entries should never shift this number.
-  const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear();
-  const remainingDays = isCurrentMonth ? Math.max(days - now.getDate() + 1, 1) : days;
+  // "Days left" is driven entirely by the latest date entered against any
+  // entry — not today's real calendar date. If no entry has a date yet,
+  // we show the full days-in-month as remaining.
+  const entryDays = entries
+    .map((e) => (e.date ? parseInt(e.date.split("-")[2], 10) : null))
+    .filter((d) => d !== null && !isNaN(d));
+  const latestDay = entryDays.length > 0 ? Math.max(...entryDays) : 0;
+  const remainingDays = Math.max(days - latestDay, 1);
   const dailyBudgetLeft = remainingDays > 0 ? moneyLeft / remainingDays : moneyLeft;
 
   const token = localStorage.getItem("token");
@@ -61,7 +65,7 @@ function ExpenseTracker() {
         setBudget(String(data.budget ?? ""));
         setEntries(
           data.entries && data.entries.length > 0
-            ? data.entries.map((e) => ({ name: e.name, amount: String(e.amount) }))
+            ? data.entries.map((e) => ({ name: e.name, amount: String(e.amount), date: e.date || "" }))
             : [emptyEntry()]
         );
       } else {
@@ -85,7 +89,7 @@ function ExpenseTracker() {
       try {
         const cleanEntries = entriesToSave
           .filter((e) => e.name.trim() !== "" && e.amount !== "")
-          .map((e) => ({ name: e.name.trim(), amount: parseFloat(e.amount) }));
+          .map((e) => ({ name: e.name.trim(), amount: parseFloat(e.amount), date: e.date || "" }));
 
         await axios.post(
           `${API}/expenses`,
@@ -275,6 +279,13 @@ function ExpenseTracker() {
                     className="flex items-center gap-2 px-4 py-2 border-b border-black/5 last:border-b-0 group"
                   >
                     <span className="text-xs text-[#0F1B2D]/25 w-4 tabular-nums">{i + 1}</span>
+                    <input
+                      type="date"
+                      value={entry.date}
+                      onChange={(e) => handleEntryChange(i, "date", e.target.value)}
+                      onBlur={() => persist(entries, budget)}
+                      className="text-xs text-[#0F1B2D]/50 outline-none bg-transparent w-28"
+                    />
                     <input
                       type="text"
                       value={entry.name}
